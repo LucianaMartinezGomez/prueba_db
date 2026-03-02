@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  postgres-db:
+    image: postgres:15
+    container_name: prueba_riwi
+    restart: always
+    environment:
+      POSTGRES_USER: user_pruebariwi
+      POSTGRES_PASSWORD: password_pruebariwi
+      POSTGRES_DB: pruebariwi_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  mongo-db:
+    image: mongo:6
+    container_name: pruebariwi_mongo
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  postgres_data:
+  mongo_data:
