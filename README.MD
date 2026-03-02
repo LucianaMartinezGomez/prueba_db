@@ -1,85 +1,91 @@
-Proyecto: PRUEBA - API de migración y consulta
+Project: TEST - Migration and Query API
 
-    Propósito: Esta API Express migra datos desde un CSV hacia PostgreSQL (esquema relacional) y MongoDB (historial por paciente), además de exponer consultas/reportes.
+Purpose: This Express API migrates data from a CSV file to PostgreSQL (relational schema) and MongoDB (patient history), and also exposes queries/reports.
 
-Archivos clave
+Key Files
 
-    src/server.js: arranque, carga de variables, conexiones y rutas.
-    src/config/*.js: helpers para PostgreSQL y MongoDB; init_db.js crea tablas si no existen.
-    src/routes/simulacro.js: endpoints para migración y consultas.
-    src/services/migrationService.js: lógica de migración CSV -> PostgreSQL + MongoDB.
-    src/models/history.js: esquema MongoDB para historial.
+src/server.js: startup, variable loading, connections, and routes.
 
-Requisitos
+src/config/*.js: helpers for PostgreSQL and MongoDB; init_db.js creates tables if they don't exist.
 
-    Docker y Docker Compose (recomendado)
-    Node.js (v18+ recomendado) y npm
+src/routes/simulacro.js: endpoints for migration and queries.
 
-Variables de entorno (.env)
+src/services/migrationService.js: CSV to PostgreSQL + MongoDB migration logic.
 
-    PORT — puerto de la API (por defecto 3000 si no se define)
-    DATABASE_URL — conexión PostgreSQL, ej.: postgresql://user:pass@localhost:5432/db
-    MONGODB_URI — URI MongoDB, ej.: mongodb://localhost:27018
-    MONGODB_DB — nombre de la base de datos Mongo
-    SIMULACRO_CSV_PATH — ruta al CSV (por defecto ./data/simulacro_saludplus_data.csv)
+src/models/history.js: MongoDB schema for history.
 
-Instalación y ejecución (pasos recomendados)
+Requirements
 
-    Instalar Docker y Docker Compose (Ubuntu/Debian — ejemplo)
+Docker and Docker Compose (recommended)
+Node.js (v18+ recommended) and npm
 
-# Instalar docker-compose si no está (alternativa según distro):
+Environment variables (.env)
+
+PORT — API port (default 3000 if not defined)
+DATABASE_URL — PostgreSQL connection, e.g., postgresql://user:pass@localhost:5432/db
+MONGODB_URI — MongoDB URI, e.g., mongodb://localhost:27018
+MONGODB_DB — MongoDB database name
+SIMULACRO_CSV_PATH — path to the CSV file (default ./data/simulacro_saludplus_data.csv)
+
+Installation and execution (recommended steps)
+
+Install Docker and Docker Compose (Ubuntu/Debian — example)
+
+# Install docker-compose if it's not already installed (alternative depending on the distribution):
 sudo apt install -y docker-compose
 
-    Instalar dependencias del proyecto (en la raíz del repositorio)
+Install project dependencies (in the repository root)
 
 npm install
 
-    Comprobar servicios locales que puedan usar los mismos puertos (opcional)
+Check for local services that might be using the same ports (optional)
 
 sudo systemctl status postgresql
 sudo systemctl status mongod
 
-Si estos servicios están corriendo y van a entrar en conflicto con los contenedores Docker (mismos puertos), puede pararlos temporalmente:
+If these services are running and will conflict with the Docker containers (using the same ports), you can temporarily stop them:
 
 sudo systemctl stop postgresql
 sudo systemctl stop mongod
 
-    Levantar las bases con Docker Compose
+Get the Docker Compose up and running
 
-Primero asegúrate de estar en el directorio que contiene docker-compose.yml (la raíz del proyecto). Luego:
+First, make sure you are in the directory containing docker-compose.yml (the project root). Then:
 
 docker-compose up -d
-# o, si tu sistema requiere sudo:
+# or, if your system requires sudo:
 sudo docker-compose up -d
 
-Comprueba que los contenedores están en marcha:
+Check that the containers are running:
 
 docker ps
 
-    Iniciar la API Node (en la raíz del proyecto)
+Start the Node API (in the project root)
 
 npm run dev
 
-Endpoints y comandos para probar (URLs)
+Endpoints and commands for testing (URLs)
 
-    Base URL (por defecto): http://localhost:3000
+Base URL (default): http://localhost:3000
 
-    Ejecutar migración CSV -> DBs (POST):
+Run CSV to DB migration (POST):
 
 curl -X POST http://localhost:3000/api/prueba_migrate
 
-    Comprobaciones rápidas en BD (desde host):
+Quick database checks (from the host):
 
-# PostgreSQL (ajusta puerto/usuario según tu .env o docker-compose)
+# PostgreSQL (adjust port/user according to your .env or docker-compose)
 psql postgresql://user_salud:password_salud@localhost:5433/pruebariwi_db -c "SELECT COUNT(*) FROM patient;"
 
-# MongoDB (usando mongosh)
+# MongoDB (using mongosh)
 mongosh --eval "db.patienthistories.find().limit(5).pretty()" mongodb://localhost:27018/mongodb
 
-Notas y recomendaciones
+Notes and recommendations
 
-    Si tienes servicios PostgreSQL/Mongo ya instalados en la máquina y prefieres usar los contenedores, detén los servicios locales o reconfigura puertos para evitar conflictos.
-    Para grandes volúmenes de datos usa COPY/bulk inserts en PostgreSQL y bulkWrite en Mongo.
-    Antes de correr una migración sobre datos reales, haz pruebas en un entorno de staging/copia y realiza backups.
+If you already have PostgreSQL/Mongo services installed on the machine and prefer to use containers, stop the local services or reconfigure ports to avoid conflicts.
 
-Servicio,Host,Puerto,Usuario / DB,Contraseña PostgreSQL,localhost,5432,user_pruebariwi / pruebariwi_db,password_pruebariwi MongoDB,localhost,27018,mongodb,(Sin contraseña)
+For large volumes of data, use COPY/bulk inserts in PostgreSQL and bulkWrite in MongoDB.
+
+Before running a migration on live data, test in a staging/copy environment and perform backups.
+
+Service, Host, Port, User / DB, Password PostgreSQL, localhost, 5432, user_pruebariwi / pruebariwi_db, password_pruebariwi MongoDB, localhost, 27018, mongodb, (No password)
