@@ -1,9 +1,4 @@
-const { pool } = require('./postgres');
-
-// Crea las tablas SQL necesarias si no existen (idempotente)
-const initDatabase = async () => {
-  const queryText = `
-  CREATE TABLE IF NOT EXISTS "category" (
+CREATE TABLE IF NOT EXISTS "category" (
 	"id" SERIAL,
 	"name" VARCHAR(100) NOT NULL,
 	PRIMARY KEY("id")
@@ -65,15 +60,21 @@ CREATE TABLE IF NOT EXISTS "sale" (
 	"quantity" INTEGER NOT NULL CHECK("[object Object]" >= 0),
 	PRIMARY KEY("id")
 );
-  `;
 
-  try {
-    await pool.query(queryText);
-    console.log('✅ PostgreSQL: Esquema creado exitosamente');
-  } catch (err) {
-    console.error('❌ PostgreSQL Error al crear esquema:', err);
-    throw err;
-  }
-};
 
-module.exports = initDatabase;
+
+ALTER TABLE "product"
+ADD FOREIGN KEY("category_id") REFERENCES "category"("id")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "product_supplier"
+ADD FOREIGN KEY("product_sku") REFERENCES "product"("product_sku")
+ON UPDATE NO ACTION ON DELETE CASCADE;
+ALTER TABLE "product_supplier"
+ADD FOREIGN KEY("supplier_id") REFERENCES "supplier"("id")
+ON UPDATE NO ACTION ON DELETE CASCADE;
+ALTER TABLE "sale"
+ADD FOREIGN KEY("product_sku") REFERENCES "product_supplier"("product_sku")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
+ALTER TABLE "sale"
+ADD FOREIGN KEY("customer_id") REFERENCES "customer"("id")
+ON UPDATE NO ACTION ON DELETE NO ACTION;
