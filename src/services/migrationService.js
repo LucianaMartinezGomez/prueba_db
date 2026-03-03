@@ -1,7 +1,7 @@
 const fs = require("fs");
 const csv = require("csv-parser");
 const { pool } = require("../config/postgres");
-const PatientHistory = require("../models/history");
+const ProductsHistory = require("../models/history.js");
 
 const migrateData = async (csvPath) => {
   const results = [];
@@ -21,13 +21,20 @@ const migrateData = async (csvPath) => {
           console.log(`🚀 Procesando ${results.length} filas...`);
 
           for (const row of results) {
+            //category
+            const categoryRes = await pool.query(
+              `INSERT INTO "category" (name) 
+                             VALUES ($1) 
+                             ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+                             RETURNING id`,
+              [row.product_category],
+            );
+
             // 1. Insertar Cliente (customer)
             customer_nameSplit = row.customer_name.split(" ");
             let first_name = customer_nameSplit[0];
             let last_name = customer_nameSplit[1];
-            console.log(first_name);
-            console.log(last_name);
-            
+
             const custRes = await pool.query(
               `INSERT INTO "customer" (first_name, last_name, email, phone, address) 
                              VALUES ($1, $2, $3, $4, $5) 
@@ -59,9 +66,17 @@ const migrateData = async (csvPath) => {
                              VALUES ($1, $2, $3) 
                              ON CONFLICT (product_sku) DO UPDATE SET name = EXCLUDED.name 
                              RETURNING product_sku`,
-              [row.product_sku, row.product_name, row.category_id || 1],
+              [row.product_sku, row.product_name, categoryRes.rows[0].id],
             );
             const productSku = prodRes.rows[0].product_sku;
+
+            // 4. Insertar product_supplier (product_supplier)
+            await pool.query(
+              `INSERT INTO "product_supplier" (unit_price, product_sku, supplier_id) 
+                             VALUES ($1, $2, $3) 
+                             ON CONFLICT (product_sku, supplier_id) DO UPDATE SET unit_price = EXCLUDED.unit_price`,
+              [row.unit_price, productSku, supplierId],
+            );
 
             // 4. Insertar Venta (sale)
             await pool.query(
@@ -69,26 +84,30 @@ const migrateData = async (csvPath) => {
                              VALUES ($1, $2, $3, $4, $5, $6, $7) 
                              ON CONFLICT (id) DO NOTHING`,
               [
-                row.sale_id,
+                row.transaction_id,
                 customerId,
                 supplierId,
                 row.date,
-                row.total_price,
+                row.total_line_value,
                 productSku,
                 row.quantity,
               ],
             );
 
             // 5. MongoDB (NoSQL)
-            await PatientHistory.findOneAndUpdate(
-              { patientEmail: row.email },
+            await ProductsHistory.findOneAndUpdate(
+              { product: row.product_name },
               {
-                patientName: `${row.first_name} ${row.last_name}`,
+                $setOnInsert: {
+                  product_sku: row.product_sku,
+                },
                 $push: {
-                  appointments: {
-                    date: row.date,
-                    productName: row.product_name,
-                    totalPrice: row.total_price,
+                  customer: {
+                    first_name: row.customer_name.split(" ")[0],
+                    last_name: row.customer_name.split(" ")[1],
+                    email: row.customer_email,
+                    phone: row.customer_phone,
+                    address: row.customer_address,
                   },
                 },
               },

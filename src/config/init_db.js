@@ -5,7 +5,7 @@ const initDatabase = async () => {
   const queryText = `
   CREATE TABLE IF NOT EXISTS "category" (
 	"id" SERIAL,
-	"name" VARCHAR(100) NOT NULL,
+	"name" VARCHAR(100) NOT NULL UNIQUE,
 	PRIMARY KEY("id")
 );
 
@@ -79,14 +79,17 @@ ALTER TABLE "product_supplier"
 ADD FOREIGN KEY("supplier_id") REFERENCES "supplier"("id")
 ON UPDATE NO ACTION ON DELETE CASCADE;
 ALTER TABLE "sale"
-ADD FOREIGN KEY("product_sku") REFERENCES "product_supplier"("product_sku")
-ON UPDATE NO ACTION ON DELETE NO ACTION;
+ADD FOREIGN KEY("product_sku", "supplier_id")
+REFERENCES "product_supplier"("product_sku", "supplier_id");
 ALTER TABLE "sale"
 ADD FOREIGN KEY("customer_id") REFERENCES "customer"("id")
 ON UPDATE NO ACTION ON DELETE NO ACTION;`;
 
+
+
   try {
     await pool.query(queryText);
+    await pool.query(constqueryFK);
     console.log("✅ PostgreSQL: Esquema creado exitosamente");
   } catch (err) {
 	await pool.query('ROLLBACK'); // En caso de error, revertimos cualquier cambio parcial
