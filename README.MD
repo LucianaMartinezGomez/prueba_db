@@ -19,6 +19,10 @@ Requirements
 Docker and Docker Compose (recommended)
 Node.js (v18+ recommended) and npm
 
+
+sudo docker compose -f docker-compose.yml up -d --build
+
+
 Environment variables (.env)
 
 PORT — API port (default 3000 if not defined)
